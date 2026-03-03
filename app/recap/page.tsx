@@ -26,7 +26,7 @@ export default function RecapPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-lg p-6 rounded-lg">
+      <div className="relative z-10 w-full max-w-lg rounded-lg">
         <RecapModal />
       </div>
     </main>

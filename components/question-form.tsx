@@ -82,7 +82,7 @@ export default function QuestionsForm() {
 
     const timer = setInterval(() => {
       decrementTime();
-    }, 120000);
+    }, 1000);
 
     return () => clearInterval(timer);
   }, [timeLeft, decrementTime, router, showFeedback, loading]);

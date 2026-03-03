@@ -29,7 +29,7 @@ export async function POST(req: Request) {
             QUESTION : L'élève a-t-il compris où était l'erreur ?`,
         },
       ],
-      model: "llama-3-8b-8192",
+      model: "meta-llama/llama-4-maverick-17b-128e-instruct", // llama-3-8b-8192
     });
 
     const result = completion.choices[0]?.message?.content
