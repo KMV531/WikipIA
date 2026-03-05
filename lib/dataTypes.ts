@@ -7,3 +7,10 @@ export interface Board {
   questionNumber: number;
   score: number;
 }
+
+export interface Mission {
+  text: string;
+  error: string;
+  correction: string;
+  category: string;
+}

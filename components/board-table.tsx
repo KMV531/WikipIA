@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Board } from "@/lib/leaderBoradTypes";
+import { Board } from "@/lib/dataTypes";
 
 const BoardTable = () => {
   const [scores, setScores] = useState([]);
