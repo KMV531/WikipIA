@@ -1,53 +1,59 @@
+import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
-import Groq from "groq-sdk";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const theme = body.theme;
 
-    if (!theme) {
-      return NextResponse.json({ error: "Thème manquant" }, { status: 400 });
-    }
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Tu es un Agent Secret. Thème : ${theme}. 
+        Génère un pack de 3 missions de fact-checking pour collégiens (11-13 ans).
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `Tu es l'Encyclopédiste de "Wikipia". 
-          Ton but est de rédiger un texte court (3-4 phrases) 100% VRAI et vérifiable sur un thème donné.
+        RÈGLES STRICTES :
+          1. LONGUEUR : Maximum 200 caractères par texte. Sois percutant.
+          2. PAS DE GRAS : Le texte doit être uniforme. L'erreur doit être fondue dans la masse.
+          3. L'ERREUR : Elle doit être crédible. Pas de dates absurdes comme 1800 pour un iPhone.
+          4. VARIÉTÉ : Change de sujet à chaque mission (Tech, Records, Créateurs, Anecdotes).
 
-          CONSIGNES DE RÉDACTION :
-          1. ABSOLUE VÉRITÉ : Ne cite que des faits historiques ou scientifiques indiscutables (pas de théories ou de dates floues).
-          2. STYLE : Pédagogique, clair, destiné à des collégiens.
-          3. STRUCTURE : Un paragraphe fluide.
-          4. THÈME : Sois original, évite les clichés les plus connus.
-          
-          FORMAT DE RÉPONSE OBLIGATOIRE (JSON) :
-          {"trueText": "Ton paragraphe ici"}`
-        },
+        INTERDICTION FORMELLE de parler de :
+        - L'exportation de poisson séché ou de nouilles (trop utilisé).
+        - La ville de Tokyo ou du Japon pour le siège social (trop utilisé).
+        - La date exacte de création 1938 (trop utilisé).
+
+        CONSIGNE : Explore des domaines variés de ${theme} comme :
+        - Les brevets étranges (écrans pliables, bagues connectées).
+        - La fabrication (semi-conducteurs, processeurs).
+        - Les records de vente ou les modèles oubliés.
+        - Les matériaux utilisés (verre, plastique recyclé).
+        - Des anecdotes sur les publicités ou les stades sponsorisés.
+
+        Réponds UNIQUEMENT au format JSON suivant :
         {
-          role: "user",
-          content: `Rédige un texte 100% vrai sur le thème : "${theme}".`
-        },
-      ],
-      model: "llama-3.3-70b-versatile", 
-      temperature: 0.2,
-      response_format: { type: "json_object" },
+          "missions": [
+            {
+              "text": "Texte avec une erreur",
+              "error": "L'erreur",
+              "correction": "La vérité",
+              "category": "DATE | NOM |LIEU"
+            }
+          ]
+        }`,
+      config: {
+        temperature: 0.7,
+      },
     });
 
-    const responseContent = completion.choices[0]?.message?.content;
-    
-    if (!responseContent) {
-      throw new Error("L'Encyclopédiste n'a rien répondu.");
-    }
-
-    return NextResponse.json(JSON.parse(responseContent));
-
+    const data = JSON.parse(response.text!);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur Encyclopédiste:", error);
-    return NextResponse.json({ error: "Erreur de génération de vérité" }, { status: 500 });
+    console.error("Erreur Gemini 3:", error);
+    return NextResponse.json(
+      { error: "Interférence avec Gemini 3" },
+      { status: 500 },
+    );
   }
 }

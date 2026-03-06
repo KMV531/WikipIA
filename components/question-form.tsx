@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Timer, Trophy, ArrowRight, AlertCircle } from "lucide-react";
 import { ToolTip } from "./ToolTip";
+import { Mission } from "@/lib/dataTypes";
 
 export default function QuestionsForm() {
   const {
@@ -24,6 +25,10 @@ export default function QuestionsForm() {
   } = useStore();
   const router = useRouter();
 
+  // --- ÉTATS POUR LA GESTION DE LA QUEUE ---
+  const [missionQueue, setMissionQueue] = useState<Mission[]>([]); // Stocke les missions d'avance
+  const [isFetchingBackground, setIsFetchingBackground] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [textIA, setTextIA] = useState("");
   const [userCorrection, setUserCorrection] = useState("");
@@ -35,12 +40,8 @@ export default function QuestionsForm() {
     category: "",
   });
 
-  // 1. FETCH QUESTION (SANS reset du timer)
-  const fetchQuestion = useCallback(async () => {
-    setLoading(true);
-    setShowFeedback(false);
-    setUserCorrection("");
-
+  // 1. FONCTION DE RÉCUPÉRATION (Gère le pack de 3)
+  const fetchMissions = useCallback(async () => {
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -49,29 +50,73 @@ export default function QuestionsForm() {
       });
       if (!response.ok) throw new Error("Erreur API");
       const data = await response.json();
-      setTextIA(data.text);
-      setAiAnswer({
-        error: data.error,
-        correction: data.correction,
-        category: data.category,
-      });
-      setLoading(false);
+      return data.missions; // Retourne le tableau [{}, {}, {}]
     } catch (error) {
-      toast.error("Erreur de génération", {
-        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-        style: { background: "red", color: "#fff" },
-      });
-      setLoading(false);
+      console.error(error);
+      return [];
     }
   }, [theme]);
 
+  // 2. LOGIQUE POUR PASSER À LA PROCHAINE MISSION
+  const loadNextMission = useCallback(async () => {
+    setLoading(true);
+    setShowFeedback(false);
+    setUserCorrection("");
+
+    // Si on n'a rien en stock, on attend l'API (Premier chargement)
+    let currentMissions = [...missionQueue];
+
+    if (currentMissions.length === 0) {
+      const newMissions = await fetchMissions();
+      if (newMissions.length === 0) {
+        toast.error("Échec de connexion satellite");
+        setLoading(false);
+        return;
+      }
+      currentMissions = newMissions;
+    }
+
+    // On prend la première mission
+    const activeMission = currentMissions[0];
+    const remainingMissions = currentMissions.slice(1);
+
+    setTextIA(activeMission.text);
+    setAiAnswer({
+      error: activeMission.error,
+      correction: activeMission.correction,
+      category: activeMission.category,
+    });
+
+    setMissionQueue(remainingMissions);
+    setLoading(false);
+
+    // RECHARGE EN ARRIÈRE-PLAN : Si on a moins de 2 missions d'avance, on refill
+    if (remainingMissions.length <= 1 && !isFetchingBackground) {
+      setIsFetchingBackground(true);
+      fetchMissions().then((newBatch) => {
+        setMissionQueue((prev) => [...prev, ...newBatch]);
+        setIsFetchingBackground(false);
+      });
+    }
+  }, [missionQueue, fetchMissions, isFetchingBackground]);
+
+  // Initialisation au montage
   useEffect(() => {
     if (!theme || !name) {
       router.push("/");
       return;
     }
-    fetchQuestion();
-  }, [questionNumber, fetchQuestion]);
+    loadNextMission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // On ne l'appelle qu'une fois, le reste est géré par nextQuestion
+
+  // Synchronisation avec le store pour changer de question
+  useEffect(() => {
+    if (questionNumber > 1) {
+      loadNextMission();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionNumber]);
 
   // --- LOGIQUE DU TIMER GLOBAL ---
   useEffect(() => {
@@ -121,10 +166,7 @@ export default function QuestionsForm() {
         });
       }
     } catch (error) {
-      toast.error("Erreur d'analyse", {
-        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-        style: { background: "red", color: "#fff" },
-      });
+      toast.error("Erreur d'analyse, AI a un souci, merci de verifier !");
     } finally {
       setLoading(false);
     }
@@ -133,19 +175,15 @@ export default function QuestionsForm() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-3xl space-y-6">
-        {/* HEADER avec le temps Global */}
-        <div className="flex justify-between items-center p-4 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl">
+        {/* HEADER */}
+        <div className="flex justify-between items-center p-4 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl bg-white/5">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-blue-400" />
-            <p className="text-white font-bold">{score}</p>
+            <p className="text-white font-bold">{score} pts</p>
           </div>
 
           <div
-            className={`flex items-center gap-3 px-6 py-2 rounded-full border transition-colors ${
-              timeLeft < 20
-                ? "border-red-500 bg-red-500/20 animate-pulse"
-                : "border-white/20 bg-white/5"
-            }`}
+            className={`flex items-center gap-3 px-6 py-2 rounded-full border transition-colors ${timeLeft < 20 ? "border-red-500 bg-red-500/20 animate-pulse" : "border-white/20 bg-white/5"}`}
           >
             <Timer
               className={timeLeft < 20 ? "text-red-500" : "text-green-500"}
@@ -158,44 +196,46 @@ export default function QuestionsForm() {
           </div>
 
           <div className="text-right">
-            <p className="text-white font-bold"># {questionNumber}</p>
+            <p className="text-white font-bold uppercase text-[10px] tracking-widest">
+              Agent: {name}
+            </p>
+            <p className="text-white font-black">NIVEAU {questionNumber}</p>
           </div>
         </div>
 
         {/* CARTE TEXTE */}
-        <Card className="bg-black/40 border-white/10 backdrop-blur-md shadow-2xl overflow-hidden">
-          <CardContent className="p-8 md:p-12">
+        <Card className="bg-black/40 border-white/10 backdrop-blur-md shadow-2xl overflow-hidden min-h-100 flex items-center">
+          <CardContent className="p-8 md:p-12 w-full">
             {loading && !showFeedback ? (
               <div className="flex flex-col items-center py-12 gap-4">
                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                <p className="text-blue-200 animate-pulse">
-                  Nouvelle analyse en cours...
+                <p className="text-blue-200 animate-pulse font-mono tracking-tighter">
+                  DÉCRYPTAGE DU DOSSIER...
                 </p>
               </div>
             ) : (
               <div className="space-y-8">
-                <div>
-                  <span className="text-blue-500 font-bold uppercase text-xs tracking-[0.2em] mb-4 block">
-                    Rapport d&apos;analyse
+                <div className="relative">
+                  <span className="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em] mb-4 block opacity-70">
+                    Rapport de mission
                   </span>
-                  <p className="text-xl md:text-2xl text-gray-100 leading-relaxed font-serif italic">
+                  <p className="text-lg md:text-xl font-mono leading-relaxed tracking-tight italic text-gray-100">
                     &quot;{textIA}&quot;
                   </p>
                 </div>
-                <p className="text-lg font-semibold">
-                  <ToolTip aiAnswer={aiAnswer} />
-                </p>
+
+                <ToolTip aiAnswer={aiAnswer} />
 
                 {showFeedback && (
                   <div
-                    className={`p-6 rounded-xl border-l-4 animate-in zoom-in-95 ${isCorrect ? "bg-green-500/10 border-green-500" : "bg-red-500/10 border-red-500"}`}
+                    className={`p-6 rounded-xl border-l-4 animate-in slide-in-from-bottom-4 duration-500 ${isCorrect ? "bg-green-500/10 border-green-500" : "bg-red-500/10 border-red-500"}`}
                   >
                     <h3
-                      className={`font-bold ${isCorrect ? "text-green-400" : "text-red-400"}`}
+                      className={`font-black uppercase tracking-widest ${isCorrect ? "text-green-400" : "text-red-400"}`}
                     >
-                      {isCorrect ? "VRAI !" : "FAUX !"}
+                      {isCorrect ? "Analyse Validée" : "Erreur de Jugement"}
                     </h3>
-                    <p className="text-sm text-gray-300 mt-2">
+                    <p className="text-sm text-gray-300 mt-2 font-medium">
                       {aiAnswer.correction}
                     </p>
                   </div>
@@ -209,27 +249,27 @@ export default function QuestionsForm() {
         {!loading && (
           <div className="space-y-4">
             {!showFeedback ? (
-              <>
+              <div className="flex flex-col gap-4">
                 <Textarea
-                  placeholder="Trouve l'erreur..."
-                  className="bg-white/5 border-white/10 text-white min-h-30 rounded-2xl"
+                  placeholder="Écris ta correction ici pour prouver l'erreur..."
+                  className="bg-white/5 border-white/10 text-white min-h-30 rounded-2xl focus:border-blue-500 transition-all text-lg"
                   value={userCorrection}
                   onChange={(e) => setUserCorrection(e.target.value)}
                 />
                 <Button
                   onClick={handleValidate}
-                  disabled={!userCorrection.trim()}
-                  className="w-full cursor-pointer h-14 bg-blue-600 font-bold rounded-2xl"
+                  disabled={!userCorrection.trim() || loading}
+                  className="w-full cursor-pointer h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-lg shadow-blue-900/20 transition-all uppercase tracking-widest"
                 >
-                  Vérifier
+                  Scanner le rapport
                 </Button>
-              </>
+              </div>
             ) : (
               <Button
                 onClick={nextQuestion}
-                className="w-full cursor-pointer h-14 bg-white text-black font-bold rounded-2xl"
+                className="w-full cursor-pointer h-16 bg-white hover:bg-gray-200 text-black font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-3"
               >
-                Question suivante <ArrowRight className="ml-2 w-5 h-5" />
+                Mission Suivante <ArrowRight className="w-6 h-6" />
               </Button>
             )}
           </div>
