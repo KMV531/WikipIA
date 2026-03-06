@@ -5,7 +5,8 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: Request) {
   try {
-    const { theme } = await req.json();
+    const body = await req.json();
+    const theme = body.theme;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
