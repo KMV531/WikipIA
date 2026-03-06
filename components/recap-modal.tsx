@@ -35,16 +35,17 @@ const LEVELS = [
 ];
 
 export default function RecapModal() {
-  const { name, score, questionNumber, restartQuiz, resetGame } = useStore();
+  const { name, score, questionNumber, theme, restartQuiz, resetGame } =
+    useStore();
   const router = useRouter();
 
   const currentGrade =
     LEVELS.find((l) => score >= l.min) || LEVELS[LEVELS.length - 1];
 
   useEffect(() => {
+    // --- 1. Tes Confettis ---
     const duration = 3 * 1000;
     const end = Date.now() + duration;
-
     const frame = () => {
       confetti({
         particleCount: 3,
@@ -53,6 +54,7 @@ export default function RecapModal() {
         origin: { x: 0 },
         colors: ["#3b82f6", "#ffffff", "#facc15"],
       });
+
       confetti({
         particleCount: 3,
         angle: 120,
@@ -60,12 +62,32 @@ export default function RecapModal() {
         origin: { x: 1 },
         colors: ["#3b82f6", "#ffffff", "#facc15"],
       });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
+      if (Date.now() < end) requestAnimationFrame(frame);
     };
     frame();
+
+    const saveScore = async () => {
+      try {
+        await fetch("/api/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name,
+            score: score,
+            theme: theme,
+            questionNumber: questionNumber,
+            label: currentGrade.label,
+            color: currentGrade.color,
+          }),
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    if (name && score !== undefined) {
+      saveScore();
+    }
   }, []);
 
   const handleReplay = () => {

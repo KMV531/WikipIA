@@ -1,100 +1,58 @@
+import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
-import Groq from "groq-sdk";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: Request) {    
   try {
-    const { theme } = await req.json();
+    const body = await req.json();
+    const theme = body.theme;
 
-    if (!theme) {
-      return NextResponse.json({ error: "Thème manquant" }, { status: 400 });
-    }
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Tu es un Agent Secret. Thème : ${theme}. 
+        Génère un pack de 3 missions de fact-checking pour collégiens (11-13 ans).
 
-    const completion = await groq.chat.completions.create({
-      messages: [
+        RÈGLES STRICTES :
+          1. LONGUEUR : Maximum 200 caractères par texte. Sois percutant.
+          2. PAS DE GRAS : Le texte doit être uniforme. L'erreur doit être fondue dans la masse.
+          3. L'ERREUR : Elle doit être crédible. Pas de dates absurdes comme 1800 pour un iPhone.
+          4. VARIÉTÉ : Change de sujet à chaque mission (Tech, Records, Créateurs, Anecdotes).
+
+        INTERDICTION FORMELLE de parler de :
+        - L'exportation de poisson séché ou de nouilles (trop utilisé).
+        - La ville de Tokyo ou du Japon pour le siège social (trop utilisé).
+        - La date exacte de création 1938 (trop utilisé).
+
+        CONSIGNE : Explore des domaines variés de ${theme} comme :
+        - Les brevets étranges (écrans pliables, bagues connectées).
+        - La fabrication (semi-conducteurs, processeurs).
+        - Les records de vente ou les modèles oubliés.
+        - Les matériaux utilisés (verre, plastique recyclé).
+        - Des anecdotes sur les publicités ou les stades sponsorisés.
+
+        Réponds UNIQUEMENT au format JSON suivant :
         {
-  role: "system",
-  content: `
-Tu es un concepteur expert de quiz de fact-checking pour collégiens.
-
-MISSION :
-Créer un court texte pédagogique contenant UNE SEULE erreur factuelle subtile et change de texte et d'erreur à chaque fois sans garder l'erreur précédente.
-
-RÈGLES ABSOLUES :
-
-1. EXACTITUDE TOTALE :
-Tout le texte doit être factuellement exact sauf UNE information précise.
-
-2. ERREUR UNIQUE :
-L'erreur doit concerner uniquement :
-- un NOM
-- une DATE
-- un LIEU
-- ou un CHIFFRE
-
-Aucune autre imprécision n'est autorisée.
-Interdiction d'introduire deux erreurs, même minimes.
-
-3. ERREUR SUBTILE :
-L'erreur doit être crédible et difficile à repérer au premier regard.
-Elle ne doit pas être absurde ou trop évidente.
-
-4. STRUCTURE :
-- 2 à 4 phrases maximum
-- L’erreur peut apparaître dans n’importe quelle phrase
-- Style clair et pédagogique
-
-5. PUBLIC :
-Niveau collège (11-15 ans).
-Langage simple mais contenu intelligent.
-
-6. VALIDATION INTERNE OBLIGATOIRE :
-Avant de répondre :
-- Vérifie mentalement qu'il n'y a qu’UNE SEULE erreur.
-- Si plusieurs erreurs existent, corrige et reformule avant d'envoyer.
-
-7. FORMAT STRICT :
-Tu dois répondre UNIQUEMENT en JSON valide.
-Aucun texte avant ou après.
-Aucun commentaire.
-Aucune explication hors JSON.
-8. VARIÉTÉ :
-Change de texte et d'erreur et de sujet à chaque requête, sans jamais répéter l'erreur NI LE TEXTE précédent.
-Verifie mentalement que le texte généré n'est jamais le même que les précédents.
-
-`
-},
-        {
-          role: "user",
-          content: `Génère un quiz sur : "${theme}".
-            Interdiction d'inventer plusieurs erreurs.
-            Réponds UNIQUEMENT en JSON :
+          "missions": [
             {
-              "text": "Texte court et pédagogique",
-              "error": "Le mot-clé précis à trouver",
-              "correction": "La vérité en une phrase simple",
-              "category": "DATE ou LIEU ou NOM ou CHIFFRE" 
-            }`,
-        },
-      ],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct", // llama-3.3-70b-versatile
-      temperature: 0.7,
-      response_format: { type: "json_object" },
+              "text": "Texte avec une erreur",
+              "error": "L'erreur",
+              "correction": "La vérité",
+              "category": "DATE | NOM |LIEU"
+            }
+          ]
+        }`,
+      config: {
+        temperature: 0.7,
+      },
     });
 
-    const responseContent = completion.choices[0]?.message?.content;
-
-    if (!responseContent) {
-      throw new Error("Pas de réponse de l'IA");
-    }
-
-    const data = JSON.parse(responseContent);
+    const data = JSON.parse(response.text!);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur Groq:", error);
+    console.error("Erreur Gemini 3:", error);
     return NextResponse.json(
-      { error: "Impossible de générer la question" },
+      { error: "Interférence avec Gemini 3" },
       { status: 500 },
     );
   }
