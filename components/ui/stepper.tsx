@@ -9,7 +9,7 @@ const StepperContext = React.createContext<{
   setActiveStep?: (step: number) => void
 }>({ activeStep: 0 })
 
-interface StepperProps extends React.HTMLAttributes<HTMLDivElement> {
+interface StepperProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   value?: number
   onChange?: (value: number) => void
 }
