@@ -3,7 +3,7 @@ import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export async function POST(req: Request) {
+export async function POST(req: Request) {    
   try {
     const { theme } = await req.json();
 
@@ -14,15 +14,57 @@ export async function POST(req: Request) {
     const completion = await groq.chat.completions.create({
       messages: [
         {
-          role: "system",
-          content: `Tu es un concepteur de jeux de fact-checking. 
-            Tu génères des textes pour des collégiens. 
-            RÈGLES CRUCIALES :
-            1. ZERO CONFUSION : Tout le texte doit être 100% vrai, SAUF un seul fait précis (nom, date, lieu).
-            2. DIVERSITÉ : Ne reste pas sur le sujet le plus connu du thème (ex: si thème 'Dinosaures', évite le T-Rex si possible). Explore des sous-sujets originaux.
-            3. MOT-CLÉ DE SÉCURITÉ : Dans le champ "error", ne mets qu'un seul mot ou un groupe de mots très court qui représente l'erreur.
-            4. STRUCTURE : 3 phrases de contexte vrai, 1 phrase contenant l'erreur unique.`,
-        },
+  role: "system",
+  content: `
+Tu es un concepteur expert de quiz de fact-checking pour collégiens.
+
+MISSION :
+Créer un court texte pédagogique contenant UNE SEULE erreur factuelle subtile et change de texte et d'erreur à chaque fois sans garder l'erreur précédente.
+
+RÈGLES ABSOLUES :
+
+1. EXACTITUDE TOTALE :
+Tout le texte doit être factuellement exact sauf UNE information précise.
+
+2. ERREUR UNIQUE :
+L'erreur doit concerner uniquement :
+- un NOM
+- une DATE
+- un LIEU
+- ou un CHIFFRE
+
+Aucune autre imprécision n'est autorisée.
+Interdiction d'introduire deux erreurs, même minimes.
+
+3. ERREUR SUBTILE :
+L'erreur doit être crédible et difficile à repérer au premier regard.
+Elle ne doit pas être absurde ou trop évidente.
+
+4. STRUCTURE :
+- 2 à 4 phrases maximum
+- L’erreur peut apparaître dans n’importe quelle phrase
+- Style clair et pédagogique
+
+5. PUBLIC :
+Niveau collège (11-15 ans).
+Langage simple mais contenu intelligent.
+
+6. VALIDATION INTERNE OBLIGATOIRE :
+Avant de répondre :
+- Vérifie mentalement qu'il n'y a qu’UNE SEULE erreur.
+- Si plusieurs erreurs existent, corrige et reformule avant d'envoyer.
+
+7. FORMAT STRICT :
+Tu dois répondre UNIQUEMENT en JSON valide.
+Aucun texte avant ou après.
+Aucun commentaire.
+Aucune explication hors JSON.
+8. VARIÉTÉ :
+Change de texte et d'erreur et de sujet à chaque requête, sans jamais répéter l'erreur NI LE TEXTE précédent.
+Verifie mentalement que le texte généré n'est jamais le même que les précédents.
+
+`
+},
         {
           role: "user",
           content: `Génère un quiz sur : "${theme}".

@@ -15,9 +15,12 @@ export async function POST(req: Request) {
             Ton rôle est de valider la réponse d'un élève.
             CONSIGNES :
             1. ANALYSE L'INTENTION : Si l'élève mentionne l'erreur cachée, même avec des fautes d'orthographe ou une phrase mal construite, tu dis OUI.
-            2. INDULGENCE : Si l'élève a compris quel était le problème, il gagne les points.
-            3. STRICT : Si l'élève répond totalement à côté ou ne mentionne pas le sujet de l'erreur, tu dis NON.
-            RÉPONSE UNIQUE : OUI ou NON.`,
+            
+            2. STRICT : Si l'élève répond totalement à côté ou ne mentionne pas le sujet de l'erreur, tu dis NON.
+            RÉPONSE UNIQUE : OUI ou NON.
+            Si l'élève répond uniquement en pointant l'erreur sans expliquer, tu dis NON.
+           Si l'élève répond en donnant une information correcte mais sans mentionner l'erreur, tu dis OUI.
+           Si l'élève ne répond pas la date  exacte, tu dis NON.`,
         },
         {
           role: "user",
@@ -26,7 +29,7 @@ export async function POST(req: Request) {
             La vérité est : "${aiCorrection}".
             L'élève a écrit : "${userChoice}".
     
-            QUESTION : L'élève a-t-il compris où était l'erreur ?`,
+            QUESTION : L'élève a-t-il corriger l'erreur ?`,
         },
       ],
       model: "meta-llama/llama-4-maverick-17b-128e-instruct", // llama-3-8b-8192
