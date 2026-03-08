@@ -108,7 +108,7 @@ export default function QuestionsForm() {
     }
     loadNextMission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // On ne l'appelle qu'une fois, le reste est géré par nextQuestion
+  }, []);
 
   // Synchronisation avec le store pour changer de question
   useEffect(() => {
@@ -145,6 +145,7 @@ export default function QuestionsForm() {
           userChoice: userCorrection,
           aiError: aiAnswer.error,
           aiCorrection: aiAnswer.correction,
+          originalText: textIA,
         }),
       });
 

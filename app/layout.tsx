@@ -72,7 +72,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <head>
-        <link rel="shortcut icon" href="/logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/Logos-wikipia.png" type="image/png" />
       </head>
       <body className={`${montserrat.variable} antialiased`}>
         <TooltipProvider>{children}</TooltipProvider>

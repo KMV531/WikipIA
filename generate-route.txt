@@ -12,16 +12,21 @@ export async function POST(req: Request) {
     const { theme } = await req.json();
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // gemini-3.1-flash-lite-preview
+      model: "gemini-3-flash-preview", // gemini-3-flash-preview
       contents: `Tu es un Agent Secret. Thème : ${theme}. 
-        Génère un pack de 3 missions de fact-checking pour collégiens. Maximum entre 200 et 350 caractères par texte. Sois percutant.
+        Génère un pack de 3 missions de fact-checking pour collégiens. Maximum 200 caractères par texte. Sois percutant.
 
         INTERDICTION FORMELLE de parler de :
         - L'exportation de poisson séché ou de nouilles (trop utilisé).
         - La ville de Tokyo ou du Japon pour le siège social (trop utilisé).
         - La date exacte de création 1938 (trop utilisé).
 
-        CONSIGNE : Explore des domaines variés de ${theme}
+        CONSIGNE : Explore des domaines variés de ${theme} comme :
+        - Les brevets étranges (écrans pliables, bagues connectées).
+        - La fabrication (semi-conducteurs, processeurs).
+        - Les records de vente ou les modèles oubliés.
+        - Les matériaux utilisés (verre, plastique recyclé).
+        - Des anecdotes sur les publicités ou les stades sponsorisés.
 
         Réponds UNIQUEMENT au format JSON :
         {

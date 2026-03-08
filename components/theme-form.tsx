@@ -82,7 +82,7 @@ export function ThemeForm({
             >
               <div className="flex size-48 items-center justify-center rounded-md">
                 <Image
-                  src={"/logo-no-bg.png"}
+                  src={"/Logos-wikipia.png"}
                   alt="WikiIA Logo"
                   width={500}
                   height={500}
