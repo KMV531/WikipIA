@@ -5,107 +5,123 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Board } from "@/lib/dataTypes";
+import { useStore } from "@/Context/useStore";
 
 const BoardTable = () => {
-  const [scores, setScores] = useState([]);
+  const { name } = useStore();
+  const [data, setData] = useState<{ top10: Board[]; userStats: any } | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchScores = async () => {
       try {
-        const response = await fetch("/api/leaderboard");
-        const data = await response.json();
-        setScores(data);
+        const response = await fetch(
+          `/api/leaderboard?name=${encodeURIComponent(name)}`,
+        );
+        const result = await response.json();
+        setData(result);
       } catch (error) {
-        console.error("Erreur lors du chargement des scores:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchScores();
-  }, []);
+  }, [name]);
 
-  if (loading) {
-    return (
-      <p className="text-white text-center">
-        Accès aux archives confidentielles...
-      </p>
-    );
-  }
-
-  if (scores.length < 0) {
-    return;
-  }
+  if (loading)
+    return <p className="text-white text-center">Decryptage des archives...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center p-8">
-      <h2 className="mb-6 text-2xl font-black text-white italic uppercase">
-        Tableau de Chasse
+    <div className="flex flex-col items-center justify-center p-8 w-full max-w-5xl">
+      {data?.userStats && (
+        <div className="w-full mb-10 p-6 rounded-2xl border border-blue-500/30 bg-blue-500/10 backdrop-blur-md">
+          <h3 className="text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-4">
+            Votre Rapport de Terrain
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase">Rang Global</p>
+              <p className="text-2xl font-black text-white">
+                #{data.userStats.rank}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase">Succès</p>
+              <p className="text-2xl font-black text-green-500">
+                {data.userStats.correctAnswers || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase">Échecs</p>
+              <p className="text-2xl font-black text-red-500">
+                {data.userStats.wrongAnswers || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-[10px] uppercase">Score Total</p>
+              <p className="text-2xl font-black text-blue-400">
+                {data.userStats.score} pts
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h2 className="mb-6 text-2xl font-black text-white italic uppercase tracking-tighter">
+        Top 10 : Élite de l'Agence
       </h2>
 
-      <Table className="w-250 h-80">
+      <Table className="border border-white/5 bg-black/20 rounded-xl">
         <TableHeader>
-          <TableRow>
-            <TableHead>Rang</TableHead>
+          <TableRow className="border-white/10 hover:bg-transparent">
+            <TableHead className="w-16">Rang</TableHead>
             <TableHead>Agent</TableHead>
-            <TableHead>Badge</TableHead>
-            <TableHead>Theme</TableHead>
-            <TableHead>No de Questions</TableHead>
+            <TableHead>Thème</TableHead>
+            <TableHead className="text-center text-green-500">✔</TableHead>
+            <TableHead className="text-center text-red-500">✘</TableHead>
             <TableHead className="text-right">Score</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {scores.map((player: Board, index) => (
-            <TableRow key={player._id || index}>
-              {/* Rang : index + 1 pour ne pas commencer à 0 */}
+          {data?.top10.map((player, index) => (
+            <TableRow
+              key={player._id}
+              className={`border-white/5 ${player.name === name ? "bg-blue-500/20" : ""}`}
+            >
               <TableCell className="font-bold text-blue-400">
                 #{index + 1}
               </TableCell>
-
-              {/* Agent  */}
-              <TableCell className="font-medium text-white">
-                {player.name}
-              </TableCell>
-
-              {/* Badge */}
               <TableCell>
-                <span
-                  className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded bg-white/5 ${player.color || "text-slate-400"}`}
-                >
-                  {player.label || "Recrue"}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-white font-bold">{player.name}</span>
+                  <span className="text-[9px] text-gray-500 uppercase">
+                    {player.label || "Recrue"}
+                  </span>
+                </div>
               </TableCell>
-
-              {/* Theme */}
-              <TableCell className="font-medium text-white">
+              <TableCell className="text-gray-300 text-xs">
                 {player.theme}
               </TableCell>
-
-              {/* Nombre de question */}
-              <TableCell className="font-medium text-white">
-                {player.questionNumber}
+              <TableCell className="text-center font-mono text-green-500">
+                {player.correctAnswers || 0}
               </TableCell>
-
-              {/* Score */}
-              <TableCell className="text-right font-black text-white text-lg">
+              <TableCell className="text-center font-mono text-red-500">
+                {player.wrongAnswers || 0}
+              </TableCell>
+              <TableCell className="text-right font-black text-white">
                 {player.score}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={6}>Agents recensés</TableCell>
-            <TableCell className="text-right">{scores.length}</TableCell>
-          </TableRow>
-        </TableFooter>
       </Table>
     </div>
   );

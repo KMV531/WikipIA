@@ -6,6 +6,8 @@ export interface Board {
   color: string;
   questionNumber: number;
   score: number;
+  correctAnswers: number;
+  wrongAnswers: number;
 }
 
 export interface Mission {

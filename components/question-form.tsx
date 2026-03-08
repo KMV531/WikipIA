@@ -18,6 +18,8 @@ export default function QuestionsForm() {
     score,
     addScore,
     addTime,
+    incrementCorrect,
+    incrementWrong,
     questionNumber,
     nextQuestion,
     timeLeft,
@@ -156,11 +158,13 @@ export default function QuestionsForm() {
       if (data.isCorrect) {
         addScore(150);
         addTime(10);
+        incrementCorrect(); // Mise à jour de la stat "Succès"
         toast.success("Correct ! +150 pts & +10s", {
           icon: <Trophy className="w-5 h-5 text-green-500" />,
           style: { background: "green", color: "#fff" },
         });
       } else {
+        incrementWrong(); // Mise à jour de la stat "Échec"
         toast.error("Faux !", {
           icon: <AlertCircle className="w-5 h-5 text-red-500" />,
           style: { background: "red", color: "#fff" },

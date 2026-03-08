@@ -6,10 +6,14 @@ interface GameState {
   theme: string;
   score: number;
   questionNumber: number;
+  correctAnswers: number;
+  wrongAnswers: number;
   setName: (newName: string) => void;
   setTheme: (newTheme: string) => void;
   addScore: (points: number) => void;
   nextQuestion: () => void;
+  incrementCorrect: () => void;
+  incrementWrong: () => void;
   timeLeft: number;
   setTimeLeft: (time: number) => void;
   decrementTime: () => void;
@@ -25,30 +29,35 @@ export const useStore = create<GameState>()(
       theme: "",
       score: 0,
       questionNumber: 1,
+      correctAnswers: 0,
+      wrongAnswers: 0,
       timeLeft: 120,
-      setTimeLeft: (time) => set({ timeLeft: time }),
-      decrementTime: () =>
-        set((state) => ({ timeLeft: Math.max(0, state.timeLeft - 1) })),
 
       setName: (newName) => set({ name: newName }),
-
       setTheme: (newTheme) => set({ theme: newTheme }),
+      setTimeLeft: (time) => set({ timeLeft: time }),
 
       addScore: (points) => set((state) => ({ score: state.score + points })),
 
       nextQuestion: () =>
-        set((state) => ({
-          questionNumber: state.questionNumber + 1,
-        })),
+        set((state) => ({ questionNumber: state.questionNumber + 1 })),
 
+      incrementCorrect: () =>
+        set((state) => ({ correctAnswers: state.correctAnswers + 1 })),
+      incrementWrong: () =>
+        set((state) => ({ wrongAnswers: state.wrongAnswers + 1 })),
+
+      decrementTime: () =>
+        set((state) => ({ timeLeft: Math.max(0, state.timeLeft - 1) })),
       addTime: (seconds) =>
-        set((state) => ({
-          timeLeft: state.timeLeft + seconds,
-        })),
+        set((state) => ({ timeLeft: state.timeLeft + seconds })),
+
       restartQuiz: () =>
         set({
           score: 0,
           questionNumber: 1,
+          correctAnswers: 0,
+          wrongAnswers: 0,
           timeLeft: 120,
         }),
 
@@ -58,11 +67,11 @@ export const useStore = create<GameState>()(
           theme: "",
           score: 0,
           questionNumber: 1,
+          correctAnswers: 0,
+          wrongAnswers: 0,
           timeLeft: 120,
         }),
     }),
-    {
-      name: "quiz-storage",
-    },
+    { name: "quiz-storage" },
   ),
 );

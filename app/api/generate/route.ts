@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const { theme } = await req.json();
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // gemini-3.1-flash-lite-preview
+      model: "gemini-3.1-flash-lite-preview", // gemini-3.1-flash-lite-preview
       contents: `Tu es un Agent Secret. Thème : ${theme}. 
         Génère un pack de 3 missions de fact-checking pour collégiens. Maximum entre 200 et 350 caractères par texte. Sois percutant.
 
