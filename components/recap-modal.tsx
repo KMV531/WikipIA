@@ -54,7 +54,7 @@ export default function RecapModal() {
   } = useStore();
 
   const router = useRouter();
-  const hasSaved = useRef(false); // Pour éviter le double envoi en StrictMode
+  const hasSaved = useRef(false);
 
   const currentGrade =
     LEVELS.find((l) => score >= l.min) || LEVELS[LEVELS.length - 1];
